@@ -321,4 +321,14 @@
     // x=7
     ["Monarquismo Absoluto", "Integralismo", "Conservadorismo de Uma Nação", "Neoconservadorismo", "Neoliberalismo", "Minarquismo", "Anarcocapitalismo", "Criptoanarquismo", "Extropianismo", "Anarcomutualismo"],
     // x=8
-    ["Estratocracia", "Conservadorismo Autoritário", "Conservadorismo Nacional", "Paleoconservadorismo", "Conservador
+    ["Estratocracia", "Conservadorismo Autoritário", "Conservadorismo Nacional", "Paleoconservadorismo", "Conservadorismo Fiscal", "Capitalismo Laissez-Faire", "Agorismo", "Anarcoprimitivismo", "Anarconaturismo", "Anarcoindividualismo"],
+    // x=9 (Extrema Direita)
+    ["Teocracia", "Fundamentalismo Religioso", "Democracia Teocrática", "Democracia Religiosa", "Conservadorismo Fiscal", "Anarcocapitalismo", "Voluntarismo", "Anticivilização", "Pós-Civ", "Stirnerismo"]
+  ];
+
+  const quizForm = document.getElementById('quiz');
+  const submitBtn = document.getElementById('submitBtn');
+  const resultsDiv = document.getElementById('results');
+
+  // Render questions
+  questions.forEach((q, i) => {
