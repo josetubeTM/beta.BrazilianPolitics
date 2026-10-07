@@ -342,4 +342,52 @@ const div = document.createElement('div');
         <label><input type="radio" name="q${i}" value="2"><span>Neutro</span></label>
         <label><input type="radio" name="q${i}" value="3"><span>Concordo</span></label>
         <label><input type="radio" name="q${i}"
+value="4"><span>Concordo totalmente</span></label>
+      </div>
+    `;
+    quizForm.appendChild(div);
+  });
 
+  // Precompute max values
+  let maxEco = 0, maxSoc = 0, maxProg = 0;
+  questions.forEach(q => {
+    const max = 2 * q.w;
+    if (q.a === 'eco') maxEco += max;
+    if (q.a === 'soc') maxSoc += max;
+    if (q.a === 'prog') maxProg += max;
+  });
+
+  submitBtn.addEventListener('click', () => {
+    let sumEco = 0, sumSoc = 0, sumProg = 0;
+    let allAnswered = true;
+
+    for (let i = 0; i < questions.length; i++) {
+const radios = document.getElementsByName(`q${i}`);
+      let val = null;
+      for (const r of radios) {
+        if (r.checked) { val = parseInt(r.value); break; }
+      }
+      if (val === null) {
+        allAnswered = false;
+        alert(`Por favor, responda a pergunta ${i+1}.`);
+        break;
+      }
+      const q = questions[i];
+      const contrib = (val - 2) * q.d * q.w;
+      if (q.a === 'eco') sumEco += contrib;
+      if (q.a === 'soc') sumSoc += contrib;
+      if (q.a === 'prog') sumProg += contrib;
+    }
+if (!allAnswered) return;
+
+    const scoreEco = (sumEco / maxEco) * 100;
+    const scoreSoc = (sumSoc / maxSoc) * 100;
+    const scoreProg = (sumProg / maxProg) * 100;
+
+    document.getElementById('scoreEco').textContent = scoreEco.toFixed(1);
+    document.getElementById('scoreSoc').textContent = scoreSoc.toFixed(1);
+    document.getElementById('scoreProg').textContent = scoreProg.toFixed(1);
+
+    // Mapear scores para índices da grade 10x10
+    // x: 0 a 9 (Esquerda a Direita)
+    let x = Math.floor((scoreEco + 100) / 20);
