@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BrazilianPolitics</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --border: #334155;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 2rem 1rem;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    h1, h2, h3 { font-weight: 600; margin-bottom: 1rem; }
+    h1 { font-size: 2rem; color: var(--accent); }
+    p { margin-bottom: 1rem; color: var(--muted); }
+    .question {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+    .question p {
+      color: var(--text);
+      font-weight: 500;
+      margin-bottom: 0.75rem;
+    }
+    .likert {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.25rem;
+      flex-wrap: wrap;
+    }
+    .likert label {
+      flex: 1;
+      min-width: 60px;
+      text-align: center;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.4rem 0.2rem;
+      cursor: pointer;
+      font-size: 0.75rem;
+      color: var(--muted);
+      transition: 0.2s;
+    }
+    .likert input { display: none; }
+    .likert input:checked + span {
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .likert label:has(input:checked) {
+      border-color: var(--accent);
+      background: #1e293b;
+    }
+    button {
+      background: var(--accent);
+      color: #0f172a;
+      border: none;
+      padding: 0.8rem 2rem;
+      font-size: 1rem;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 1rem;
+      transition: 0.2s;
+    }
+    button:hover { opacity: 0.9; }
+    #results {
+      display: none;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-top: 2rem;
+    }
+    .score-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+    }
+    .score-row span:last-child { font-weight: 700; color: var(--accent); }
+    canvas {
+      display: block;
+      margin: 1.5rem auto;
+      background: #0f172a;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+    .ideology {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-align: center;
+      margin: 1rem 0;
+    }
+    .sub-ideology {
+      text-align: center;
+      font-size: 1rem;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+    .footer {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>BrazilianPolitics</h1>
+  <p>Responda às 144 afirmações abaixo. O resultado mostrará sua posição exata na grade da bússola política (10x10) e sua ideologia correspondente, baseada na imagem fornecida.</p>
+  <form id="quiz"></form>
+  <button type="button" id="submitBtn">Ver Resultado</button>
+
+  <div id="results">
+    <h2>Resultado</h2>
+    <div class="ideology" id="ideologyLabel"></div>
+    <div class="sub-ideology" id="subIdeologyLabel"></div>
+    <div class="score-row"><span>Econômico (Esquerda ↔ Direita)</span><span id="scoreEco"></span></div>
+    <div class="score-row"><span>Social (Libertário ↔ Autoritário)</span><span id="scoreSoc"></span></div>
+    <div class="score-row"><span>Progressista ↔ Conservador</span><span id="scoreProg"></span></div>
+    <canvas id="compass" width="400" height="400"></canvas>
+    <p style="text-align:center; font-size:0.9rem;">Eixo X: Econômico (negativo = esquerda, positivo = direita)<br>Eixo Y: Social (negativo = libertário, positivo = autoritário)</p>
+  </div>
+</div>
+
+<script>
+  // ==========================================
+  // 144 PERGUNTAS PERSONALIZADAS
+  // ==========================================
+  const questions = [
+    // Econômico (48)
+    {t:"O governo deveria garantir um salário mínimo vital para todos, mesmo que isso aumente impostos.",a:"eco",d:-1,w:1},
+    {t:"Os serviços de saúde deveriam ser totalmente privatizados.",a:"eco",d:1,w:1},
+    {t:"Grandes fortunas deveriam pagar impostos muito mais altos.",a:"eco",d:-1,w:1},
+    {t:"O mercado livre é o melhor mecanismo para distribuir recursos.",a:"eco",d:1,w:1},
+    {t:"O governo deveria controlar os preços de alimentos e moradia.",a:"eco",d:-1,w:1},
+    {t:"As empresas estatais deveriam ser vendidas para o setor privado.",a:"eco",d:1,w:1},
+    {t:"A educação pública gratuita deve ser prioridade sobre cortes de impostos.",a:"eco",d:-1,w:1},
+    {t:"Os sindicatos deveriam ter menos poder para não prejudicar a economia.",a:"eco",d:1,w:1},
+    {t:"O lucro não deveria existir; os meios de produção deveriam ser coletivos.",a:"eco",d:-1,w:2},
+    {t:"A herança deveria ser taxada em 100% acima de certo valor.",a:"eco",d:-1,w:1},
+    {t:"O sistema de previdência deveria ser privado e individual.",a:"eco",d:1,w:1},
+    {t:"O governo deveria criar empregos diretamente em obras públicas.",a:"eco",d:-1,w:1},
+    {t:"A carga tributária sobre empresas deveria ser reduzida ao mínimo.",a:"eco",d:1,w:1},
+    {t:"O acesso à moradia deveria ser um direito garantido pelo Estado.",a:"eco",d:-1,w:1},
+    {t:"As universidades deveriam cobrar mensalidades dos alunos.",a:"eco",d:1,w:1},
+    {t:"O salário mínimo deveria ser extinto; o mercado definiria os salários.",a:"eco",d:1,w:1},
+    {t:"Bancos e instituições financeiras deveriam ser nacionalizados.",a:"eco",d:-1,w:2},
+    {t:"O livre comércio internacional beneficia a todos e deve ser expandido.",a:"eco",d:1,w:1},
+    {t:"O governo deveria subsidiar energia renovável e transporte público.",a:"eco",d:-1,w:1},
+    {t:"A propriedade privada é um direito absoluto e não deve ser regulada.",a:"eco",d:1,w:2},
+    {t:"O desemprego é melhor resolvido com investimento público.",a:"eco",d:-1,w:1},
+    {t:"As leis trabalhistas deveriam ser flexibilizadas para facilitar contratações.",a:"eco",d:1,w:1},
+    {t:"O sistema capitalista é fundamentalmente explorador e deve ser substituído.",a:"eco",d:-1,w:2},
+    {t:"O governo deveria oferecer renda básica universal.",a:"eco",d:-1,w:1},
+    {t:"Os ricos deveriam pagar menos impostos para investir e gerar empregos.",a:"eco",d:1,w:1},
+    {t:"O acesso à internet deveria ser um serviço público gratuito.",a:"eco",d:-1,w:1},
+    {t:"As escolas deveriam ser administradas por empresas privadas com vouchers.",a:"eco",d:1,w:1},
+    {t:"O Estado deveria regular os aluguéis para torná-los acessíveis.",a:"eco",d:-1,w:1},
+    {t:"A dívida pública deveria ser paga com cortes em programas sociais.",a:"eco",d:1,w:1},
+    {t:"O Banco Central deveria ser controlado democraticamente pelo povo.",a:"eco",d:-1,w:1},
+    {t:"A especulação financeira deveria ser proibida.",a:"eco",d:-1,w:2},
+    {t:"O imposto de renda deveria ser único e baixo para todos.",a:"eco",d:1,w:1},
+    {t:"O governo deveria garantir creches gratuitas para todos.",a:"eco",d:-1,w:1},
+    {t:"As mineradoras e petrolíferas deveriam ser privadas e sem restrições.",a:"eco",d:1,w:1},
+    {t:"O lucro das empresas deveria ser compartilhado com os trabalhadores.",a:"eco",d:-1,w:1},
+    {t:"O mercado de ações é essencial para a economia e deve ser incentivado.",a:"eco",d:1,w:1},
+    {t:"O governo deveria estatizar a produção de energia.",a:"eco",d:-1,w:2},
+    {t:"Os programas de assistência social deveriam ser reduzidos drasticamente.",a:"eco",d:1,w:1},
+    {t:"O transporte público deveria ser gratuito e financiado por impostos progressivos.",a:"eco",d:-1,w:1},
+    {t:"As patentes de medicamentos deveriam ser abolidas para baratear remédios.",a:"eco",d:-1,w:1},
+    {t:"O setor privado é mais eficiente que o governo em quase tudo.",a:"eco",d:1,w:1},
+    {t:"O governo deveria investir pesadamente em indústria nacional.",a:"eco",d:-1,w:1},
+    {t:"A terceirização e a pejotização deveriam ser ampliadas.",a:"eco",d:1,w:1},
+    {t:"O direito à água e saneamento deveria ser garantido pelo Estado.",a:"eco",d:-1,w:1},
+    {t:"As heranças deveriam ser isentas de impostos para preservar o patrimônio familiar.",a:"eco",d:1,w:1},
+    {t:"O Estado deveria controlar os preços dos combustíveis.",a:"eco",d:-1,w:1},
+    {t:"A concorrência entre escolas melhora a educação.",a:"eco",d:1,w:1},
+    {t:"O trabalho doméstico não remunerado deveria ser reconhecido e pago pelo Estado.",a:"eco",d:-1,w:1},
+
+    // Social (48)
+    {t:"O governo deveria monitorar todas as comunicações para combater o terrorismo.",a:"soc",d:1,w:2},
+    {t:"A liberdade de expressão deve ser absoluta, mesmo para discursos de ódio.",a:"soc",d:-1,w:1},
+    {t:"A polícia deveria ter mais poder para prender suspeitos sem mandado.",a:"soc",d:1,w:1},
+    {t:"As drogas deveriam ser legalizadas para uso pessoal.",a:"soc",d:-1,w:1},
+    {t:"O governo deveria censurar fake news nas redes sociais.",a:"soc",d:1,w:1},
+    {t:"O direito ao aborto deveria ser garantido sem restrições.",a:"soc",d:-1,w:1},
+    {t:"A pena de morte deveria ser aplicada para crimes graves.",a:"soc",d:1,w:2},
+    {t:"As armas de fogo deveriam ser proibidas para civis.",a:"soc",d:1,w:1},
+    {t:"O governo deveria exigir identificação biométrica de todos os cidadãos.",a:"soc",d:1,w:1},
+    {t:"A prisão perpétua sem liberdade condicional é uma punição justa.",a:"soc",d:1,w:1},
+    {t:"O direito de protestar deve ser irrestrito, mesmo bloqueando ruas.",a:"soc",d:-1,w:1},
+    {t:"O exército deveria ter mais recursos para garantir a ordem interna.",a:"soc",d:1,w:1},
+    {t:"A tortura pode ser justificada para obter informações de terroristas.",a:"soc",d:1,w:2},
+    {t:"O governo deveria permitir que cidadãos tenham armas para autodefesa.",a:"soc",d:-1,w:1},
+    {t:"A liberdade sexual e de gênero deve ser protegida pelo Estado.",a:"soc",d:-1,w:1},
+    {t:"O serviço militar obrigatório deveria existir.",a:"soc",d:1,w:1},
+    {t:"As prisões deveriam ser substituídas por medidas socioeducativas.",a:"soc",d:-1,w:1},
+    {t:"O governo deveria proibir manifestações que critiquem as forças armadas.",a:"soc",d:1,w:2},
+    {t:"A eutanásia deveria ser legal para doentes terminais.",a:"soc",d:-1,w:1},
+    {t:"O voto deveria ser obrigatório e com punição para quem não votar.",a:"soc",d:1,w:1},
+    {t:"O governo deveria ter acesso a dados bancários de todos sem ordem judicial.",a:"soc",d:1,w:1},
+    {t:"A prostituição deveria ser legalizada e regulamentada.",a:"soc",d:-1,w:1},
+    {t:"O Estado deveria impor toque de recolher para menores de idade.",a:"soc",d:1,w:1},
+    {t:"A liberdade de imprensa deve ser limitada em tempos de crise nacional.",a:"soc",d:1,w:1},
+    {t:"O casamento entre pessoas do mesmo sexo deveria ser proibido.",a:"soc",d:1,w:1},
+    {t:"O governo deveria permitir que pessoas usem drogas recreativas sem punição.",a:"soc",d:-1,w:1},
+    {t:"A vigilância em espaços públicos por câmeras com reconhecimento facial é necessária.",a:"soc",d:1,w:1},
+    {t:"O direito de se recusar a cumprir leis injustas (desobediência civil) é fundamental.",a:"soc",d:-1,w:1},
+    {t:"O governo deveria proibir jogos violentos e conteúdos adultos.",a:"soc",d:1,w:1},
+    {t:"As forças armadas deveriam ser reduzidas ao mínimo.",a:"soc",d:-1,w:1},
+    {t:"O Estado deveria ter o poder de dissolver partidos antidemocráticos.",a:"soc",d:1,w:1},
+    {t:"A privacidade digital é um direito fundamental e não pode ser violada.",a:"soc",d:-1,w:1},
+    {t:"O governo deveria criar leis para punir quem não denunciar criminosos.",a:"soc",d:1,w:1},
+    {t:"A legalização da maconha é um passo positivo para a liberdade individual.",a:"soc",d:-1,w:1},
+    {t:"O governo deveria controlar a internet para proteger crianças.",a:"soc",d:1,w:1},
+    {t:"A liberdade de associação inclui o direito de formar milícias.",a:"soc",d:-1,w:1},
+    {t:"O Estado deveria obrigar cidadãos a carregar identidade em todo momento.",a:"soc",d:1,w:1},
+    {t:"A tortura nunca é justificável, em nenhuma circunstância.",a:"soc",d:-1,w:2},
+    {t:"O governo deveria permitir que presos votem.",a:"soc",d:-1,w:1},
+    {t:"A polícia deveria usar força letal apenas como último recurso.",a:"soc",d:-1,w:1},
+    {t:"O governo deveria proibir a venda de álcool para maiores de 21 anos.",a:"soc",d:1,w:1},
+    {t:"O direito de portar armas é essencial para proteger a liberdade.",a:"soc",d:-1,w:1},
+    {t:"O Estado deveria ter poder para censurar conteúdos que ameacem a segurança nacional.",a:"soc",d:1,w:2},
+    {t:"A liberdade de religião inclui o direito de não ser obrigado a cumprir leis religiosas.",a:"soc",d:-1,w:1},
+    {t:"O governo deveria implantar chip de identificação em todos os cidadãos.",a:"soc",d:1,w:2},
+    {t:"A greve é um direito fundamental e não deve ser limitada.",a:"soc",d:-1,w:1},
+    {t:"O Estado deveria proibir totalmente a pornografia.",a:"soc",d:1,w:1},
+    {t:"A autonomia corporal é inviolável; ninguém pode ser forçado a tratamento médico.",a:"soc",d:-1,w:1},
+
+    // Progressismo/Conservadorismo (48)
+    {t:"A religião deveria ter um papel central nas decisões políticas.",a:"prog",d:1,w:1},
+    {t:"A ciência deveria ser a base das políticas públicas, não a tradição.",a:"prog",d:-1,w:1},
+    {t:"O casamento é exclusivamente entre um homem e uma mulher.",a:"prog",d:1,w:2},
+    {t:"A identidade de gênero é uma construção social e deve ser respeitada.",a:"prog",d:-1,w:1},
+    {t:"A família tradicional é a base da sociedade e deve ser protegida.",a:"prog",d:1,w:1},
+    {t:"A educação sexual nas escolas deve ser abrangente e sem tabus.",a:"prog",d:-1,w:1},
+    {t:"O aborto deveria ser proibido em todos os casos, exceto risco de vida.",a:"prog",d:1,w:2},
+    {t:"A igualdade racial exige políticas afirmativas.",a:"prog",d:-1,w:1},
+    {t:"A homossexualidade é uma doença ou desvio que deve ser tratado.",a:"prog",d:1,w:2},
+    {t:"O progresso tecnológico deve ser abraçado, mesmo que mude tradições.",a:"prog",d:-1,w:1},
+    {t:"A pena de morte é uma tradição que deve ser mantida.",a:"prog",d:1,w:1},
+    {t:"Os imigrantes enriquecem a cultura e a economia do país.",a:"prog",d:-1,w:1},
+    {t:"O papel da mulher é prioritariamente cuidar do lar e da família.",a:"prog",d:1,w:2},
+    {t:"A luta contra as mudanças climáticas deve ser prioridade sobre interesses econômicos.",a:"prog",d:-1,w:1},
+    {t:"A eutanásia é um direito humano e deve ser legalizada.",a:"prog",d:-1,w:1},
+    {t:"A criação de filhos deve seguir valores religiosos tradicionais.",a:"prog",d:1,w:1},
+    {t:"A diversidade cultural é uma ameaça à identidade nacional.",a:"prog",d:1,w:1},
+    {t:"O racismo é estrutural e precisa de reparação histórica.",a:"prog",d:-1,w:1},
+    {t:"A energia nuclear é perigosa e deve ser abandonada.",a:"prog",d:-1,w:1},
+    {t:"O veganismo e a proteção animal são causas importantes.",a:"prog",d:-1,w:1},
+    {t:"A monarquia e as tradições nobiliárquicas devem ser preservadas.",a:"prog",d:1,w:1},
+    {t:"A educação deve ensinar que todas as orientações sexuais são normais.",a:"prog",d:-1,w:1},
+    {t:"O papel do Estado é preservar a moral e os bons costumes.",a:"prog",d:1,w:2},
+    {t:"A pesquisa com células-tronco embrionárias é aceitável para salvar vidas.",a:"prog",d:-1,w:1},
+    {t:"A globalização destrói a cultura local e deve ser combatida.",a:"prog",d:1,w:1},
+    {t:"Os direitos dos povos indígenas devem ser priorizados sobre interesses econômicos.",a:"prog",d:-1,w:1},
+    {t:"A castidade e a abstinência devem ser ensinadas nas escolas.",a:"prog",d:1,w:1},
+    {t:"A inteligência artificial e a automação são ameaças que devem ser freadas.",a:"prog",d:1,w:1},
+    {t:"A liberdade religiosa não deve permitir discriminação contra minorias.",a:"prog",d:-1,w:1},
+    {t:"A pena de morte deve ser abolida em todos os países.",a:"prog",d:-1,w:1},
+    {t:"A natalidade deve ser incentivada para preservar a nação.",a:"prog",d:1,w:1},
+    {t:"A adoção por casais homossexuais é prejudicial para as crianças.",a:"prog",d:1,w:2},
+    {t:"O ensino domiciliar (homeschooling) é melhor que a escola tradicional.",a:"prog",d:1,w:1},
+    {t:"A teoria da evolução deve ser ensinada como única explicação científica.",a:"prog",d:-1,w:1},
+    {t:"O criacionismo deve ser ensinado junto com a evolução.",a:"prog",d:1,w:1},
+    {t:"A legalização da maconha é uma questão de justiça social.",a:"prog",d:-1,w:1},
+    {t:"A nudez artística e sexual deve ser censurada em espaços públicos.",a:"prog",d:1,w:1},
+    {t:"A tecnologia deve ser usada para melhorar a condição humana, mesmo que altere a natureza.",a:"prog",d:-1,w:1},
+    {t:"A tradição é mais importante que a inovação para manter a coesão social.",a:"prog",d:1,w:2},
+    {t:"A luta feminista é essencial para uma sociedade justa.",a:"prog",d:-1,w:1},
+    {t:"O divórcio deveria ser dificultado para preservar a família.",a:"prog",d:1,w:1},
+    {t:"A educação deve promover o pensamento crítico, mesmo que questione autoridades.",a:"prog",d:-1,w:1},
+    {t:"A homofobia deve ser combatida com leis severas.",a:"prog",d:-1,w:1},
+    {t:"A religião é um assunto privado e não deve influenciar leis.",a:"prog",d:-1,w:1},
+    {t:"O patriotismo e os símbolos nacionais devem ser cultuados nas escolas.",a:"prog",d:1,w:1},
+    {t:"A intersexualidade deve ser respeitada e não corrigida cirurgicamente.",a:"prog",d:-1,w:1},
+    {t:"A eugenia é uma ciência válida para melhorar a espécie humana.",a:"prog",d:1,w:2},
+    {t:"O progressismo está destruindo os valores ocidentais.",a:"prog",d:1,w:2}
+  ];
+
+  // ==========================================
+  // MATRIZ DE IDEOLOGIAS (BASEADA NA IMAGEM 10x10)
+  // x = Econômico (0=Esquerda, 9=Direita)
+  // y = Social (0=Autoritário, 9=Libertário)
+  // ==========================================
+  const ideologyGrid = [
+    // x=0 (Extrema Esquerda)
+    ["Stalinismo", "Castroismo", "Guevarismo", "Allendeísmo", "Confederalismo Democrático", "Anarcocomunismo", "Anarcocoletivismo", "Egoísmo", "Ilegalismo", "Anarcocomunismo Sintetizado"],
+    // x=1
+    ["Juche", "Hoxhaismo", "Sankaraísmo", "Nacionalismo de Esquerda", "Ecossocialismo", "Anarcossindicalismo", "Mutualismo", "Pós-Anarquismo", "Anarcopacifismo", "Marxismo Libertário"],
+    // x=2
+    ["Marxismo-Leninismo", "Brejnevismo", "Socialismo de Estado", "Socialismo Reformista", "Progressismo", "Socialismo Libertário", "Eco-Anarquismo", "Anarquismo Insurrecional", "Anarquismo Cristão", "Autonomismo"],
+    // x=3
+    ["Maoismo", "Denguismo", "Social-Democracia", "Social-Liberalismo", "Social-Liberalismo", "Libertarianismo de Esquerda", "Comunalismo", "Anarcofeminismo", "Anarquismo Budista", "Comunismo de Conselhos"],
+    // x=4 (Centro-Esquerda)
+    ["Marxismo-Leninismo-Maoismo", "Titoísmo", "Socialismo Democrático", "Terceira Via", "Centrismo Radical", "Georgismo", "Municipalismo Libertário", "Anarquismo Queer", "Anarquismo Verde", "De Leonismo"],
+    // x=5 (Centro-Direita)
+    ["Fascismo", "Falangismo", "Democracia Cristã", "Liberalismo Conservador", "Centrismo", "Liberalismo Clássico", "Libertarianismo de Coração", "Tecnolibertarianismo", "Anarcotranshumanismo", "Esquerda Rothbardiana"],
+    // x=6
+    ["Nazismo", "Fascismo Clerical", "Conservadorismo Paternalista", "Liberalismo Conservador", "Liberalismo Moderado", "Ordoliberalismo", "Paleolibertarianismo", "Ciberlibertarianismo", "Libertarianismo Transhumanista", "Libertarianismo Populista"],
+    // x=7
+    ["Monarquismo Absoluto", "Integralismo", "Conservadorismo de Uma Nação", "Neoconservadorismo", "Neoliberalismo", "Minarquismo", "Anarcocapitalismo", "Criptoanarquismo", "Extropianismo", "Anarcomutualismo"],
+    // x=8
+    ["Estratocracia", "Conservadorismo Autoritário", "Conservadorismo Nacional", "Paleoconservadorismo", "Conservador
