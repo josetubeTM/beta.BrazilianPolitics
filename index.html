@@ -332,3 +332,14 @@
 
   // Render questions
   questions.forEach((q, i) => {
+const div = document.createElement('div');
+    div.className = 'question';
+    div.innerHTML = `
+      <p>${i+1}. ${q.t}</p>
+      <div class="likert">
+        <label><input type="radio" name="q${i}" value="0"><span>Discordo totalmente</span></label>
+        <label><input type="radio" name="q${i}" value="1"><span>Discordo</span></label>
+        <label><input type="radio" name="q${i}" value="2"><span>Neutro</span></label>
+        <label><input type="radio" name="q${i}" value="3"><span>Concordo</span></label>
+        <label><input type="radio" name="q${i}"
+
