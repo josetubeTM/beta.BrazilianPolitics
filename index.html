@@ -391,3 +391,51 @@ if (!allAnswered) return;
     // Mapear scores para índices da grade 10x10
     // x: 0 a 9 (Esquerda a Direita)
     let x = Math.floor((scoreEco + 100) / 20);
+if (x < 0) x = 0; if (x > 9) x = 9;
+
+    // y: 0 a 9 (Autoritário a Libertário)
+    // scoreSoc positivo = Autoritário (topo), negativo = Libertário (base)
+    let y = Math.floor((100 - scoreSoc) / 20);
+    if (y < 0) y = 0; if (y > 9) y = 9;
+
+    // Obter ideologia da matriz
+    let ideology = ideologyGrid[x][y];
+
+    // Adicionar modificador de progressismo/conservadorismo
+    let subIdeology = "";
+    if (scoreProg < -15) {
+      subIdeology = " (Corrente Progressista)";
+    } else if (scoreProg > 15) {
+      subIdeology = " (Corrente Conservadora)";
+    } else {
+      subIdeology = " (Corrente Moderada)";
+}
+
+    document.getElementById('ideologyLabel').textContent = ideology;
+    document.getElementById('subIdeologyLabel').textContent = subIdeology;
+
+    // Desenhar bússola
+    const canvas = document.getElementById('compass');
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    // Fundo
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, 0, w, h);
+const px = w/2 + (scoreEco / 100) * (w/2 - 20);
+    const py = h/2 - (scoreSoc / 100) * (h/2 - 20);
+    ctx.beginPath();
+    ctx.arc(px, py, 8, 0, 2 * Math.PI);
+    ctx.fillStyle = '#38bdf8';
+    ctx.fill();
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    resultsDiv.style.display = 'block';
+    resultsDiv.scrollIntoView({ behavior: 'smooth' });
+  });
+</script>
+</body>
+</html>
